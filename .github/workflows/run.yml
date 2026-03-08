@@ -2,7 +2,8 @@ name: Drain Tracker
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/5 * * * *"   # run scanner every 5 minutes
+    - cron: "0 22 * * *"    # send report at 10PM UTC
   workflow_dispatch:
 
 jobs:
