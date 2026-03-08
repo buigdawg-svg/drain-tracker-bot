@@ -59,15 +59,22 @@ def save_seen(txid):
 
 
 def get_latest_block():
-    url=f"https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey={ETHERSCAN_API}"
+
+    url=f"https://api.etherscan.io/v2/api?chainid=1&module=proxy&action=eth_blockNumber&apikey={ETHERSCAN_API}"
+
     r=requests.get(url).json()
+
     return int(r["result"],16)
 
 
 def get_block_txs(block):
+
     tag=hex(block)
-    url=f"https://api.etherscan.io/api?module=proxy&action=eth_getBlockByNumber&tag={tag}&boolean=true&apikey={ETHERSCAN_API}"
+
+    url=f"https://api.etherscan.io/v2/api?chainid=1&module=proxy&action=eth_getBlockByNumber&tag={tag}&boolean=true&apikey={ETHERSCAN_API}"
+
     r=requests.get(url).json()
+
     return r["result"]["transactions"]
 
 
@@ -76,6 +83,7 @@ def eth_from_wei(v):
 
 
 def detect_protocol(addr):
+
     for name,a in WATCHED_PROTOCOLS.items():
         if addr and addr.lower()==a.lower():
             return name
@@ -88,11 +96,13 @@ def detect_protocol(addr):
 
 
 def record(wallet,protocol,amount,tx):
+
     with open(DATA_FILE,"a") as f:
         f.write(f"{wallet}|{protocol}|{amount}|{tx}\n")
 
 
 def send_discord(msg):
+
     if DISCORD_WEBHOOK:
         requests.post(DISCORD_WEBHOOK,json={"content":msg})
 
@@ -100,6 +110,7 @@ def send_discord(msg):
 def scan_blocks():
 
     latest=get_latest_block()
+
     seen=load_seen()
 
     for block in range(latest-BLOCK_LOOKBACK,latest+1):
@@ -114,7 +125,9 @@ def scan_blocks():
                 continue
 
             value=eth_from_wei(tx["value"])
+
             wallet=tx["from"]
+
             to_addr=tx["to"]
 
             protocol=detect_protocol(to_addr)
@@ -136,8 +149,11 @@ def send_report():
     drains=[]
 
     with open(DATA_FILE) as f:
+
         for line in f:
+
             w,p,a,t=line.strip().split("|")
+
             drains.append((w,p,float(a),t))
 
     if not drains:
@@ -150,17 +166,23 @@ def send_report():
     msg="📊 Daily Drain Report\n\n"
 
     msg+=f"Total ETH moved: {total:.2f}\n"
+
     msg+=f"Events: {len(drains)}\n\n"
 
     msg+="🔥 Biggest Event\n"
+
     msg+=f"Wallet: {biggest[0]}\n"
+
     msg+=f"Protocol: {biggest[1]}\n"
+
     msg+=f"Amount: {biggest[2]} ETH\n"
+
     msg+=f"{biggest[3]}\n\n"
 
     msg+="Top Events\n"
 
     for d in sorted(drains,key=lambda x:x[2],reverse=True)[:7]:
+
         msg+=f"{d[2]} ETH — {d[1]} — {d[3]}\n"
 
     send_discord(msg)
@@ -175,8 +197,10 @@ def main():
     scan_blocks()
 
     if now.hour==22 and now.minute<5:
+
         send_report()
 
 
 if __name__=="__main__":
+
     main()
